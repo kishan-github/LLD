@@ -4,9 +4,9 @@ using System.Threading.Tasks;
 
 Console.WriteLine("Start executing main.....");
 var taskManager = new TaskManager();
-taskManager.addTask("task1", new List<string> { "task2" });
-taskManager.addTask("task2", new List<string> { "task3" });
-taskManager.addTask("task3", new List<string> { "task4" });
+taskManager.addTask("task1", new List<string> { "task2", "task3" });
+taskManager.addTask("task2");
+taskManager.addTask("task3");
 taskManager.addTask("task4");
 taskManager.buildDependency();
 await taskManager.run();
@@ -21,6 +21,8 @@ public class UserTask
 
     // List of task id's which are waiting for this task to complete.
     public List<string> Dependents = new();
+
+    public int remainingDependencies;
 
     // Constructor
     public UserTask(string taskId)
@@ -80,6 +82,7 @@ public class TaskManager
         if (dependencies != null)
         {
             task.Dependencies.AddRange(dependencies);
+            task.remainingDependencies = dependencies.Count;
         }
 
         // Upadte the TaskMap.
@@ -102,7 +105,9 @@ public class TaskManager
             var task = await completedTask;
             foreach (var dependentTask in task.Dependents)
             {
-                readyList.Add(UserTask.DoWorkAsync(TaskMap[dependentTask], sleepTimer));
+                TaskMap[dependentTask].remainingDependencies--;
+                if (TaskMap[dependentTask].remainingDependencies == 0)
+                    readyList.Add(UserTask.DoWorkAsync(TaskMap[dependentTask], sleepTimer));
             }
         }
         Console.WriteLine("All task are finished");
